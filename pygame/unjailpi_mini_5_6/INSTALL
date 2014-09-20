@@ -1,0 +1,4 @@
+sudo apt-get install geoip-database libgeoip1 python-psutil python-simplejson python-requests tor openvpn
+sudo dpkg -i data/python-geoip_1.2.4-2_armhf.deb
+
+

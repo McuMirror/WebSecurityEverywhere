@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+##############################################
+# Script Firewall / Iptables / Bridage for Lan TiG 5.2 #
+################# by toine7m #################
+
+IPTABLES= "/sbin/iptables"
+WAN=eth0 #port gigabit 1
+LAN=eth1 #port gigabit 2
+LO=lo
+
+#routage ipv4
+
+echo « 1″ > /proc/sys/net/ipv4/ip_forward
+
+#supprime toutes les regles pre-existantes
+
+$IPTABLES -F
+$IPTABLES -F -t filter
+$IPTABLES -F -t nat
+$IPTABLES -X
+echo – Tables videes
+
+#Tout ce qui n’est pas explicitement autorise est implicitement interdit !
+
+$IPTABLES -P INPUT DROP
+$IPTABLES -P OUTPUT ACCEPT
+$IPTABLES -P FORWARD DROP
+echo – Interdire toute connexion entrante : [OK]
+echo – Autoriser toute connexion sortante : [OK]
+echo – Interdire tout forwarding : [OK]
+
+##### Ne pas casser les connexions deja etablies #####
+$IPTABLES -A INPUT -m state –state RELATED,ESTABLISHED -j ACCEPT
+$IPTABLES -A FORWARD -m state –state RELATED,ESTABLISHED -j ACCEPT
+echo – Acceptation des connexions deja etablies : [OK]
+
+#On autorise tous les protocoles a passer par la loopback
+$IPTABLES -A INPUT -p ALL -i $LO -j ACCEPT
+
+#Pings venant du LAN et a destination du WAN autorises
+$IPTABLES -A FORWARD -p icmp -i $LAN -o $WAN -j ACCEPT
+$IPTABLES -A FORWARD -p icmp -i $WAN -o $LAN -j ACCEPT
+
+#Pings venant du LAN et a destination du firewall autorises
+$IPTABLES -A INPUT -p icmp -i $LAN -j ACCEPT
+
+#MASQUERADE permet de modifier l’ip source d’un paquet
+#par l’ip de l’interface de sortie du firewall.
+#Les paquets sortant du firewall ont leur ip source
+#remplacee par l’ip de l’interface WAN du firewall :
+$IPTABLES -A POSTROUTING -t nat -o $WAN -j MASQUERADE
+
+#PROXY transparent
+#$IPTABLES -A PREROUTING -t nat -s 172.16.1.0/24 -p tcp –dport 80 -j REDIRECT –to-port 3128
+#echo – Acces net avec squid [OK]
+
+#il faut ensuite autoriser le trafic entrant sur le port 3128 du firewall :
+#$IPTABLES -A INPUT -t filter -p tcp –dport 3128 -j ACCEPT
+
+#dhcp
+$IPTABLES -A INPUT -p udp –dport 67:68 -m state –state NEW -i $LAN -j ACCEPT
+
+#dns
+$IPTABLES -A INPUT -p udp –dport 53 -m state –state NEW -i $LAN -j ACCEPT
+$IPTABLES -A FORWARD -p udp –dport 53 -m state –state NEW -i $LAN -j ACCEPT
+
+$IPTABLES -A INPUT -p tcp –dport 53 -m state –state NEW -i $LAN -j ACCEPT
+$IPTABLES -A FORWARD -p tcp –dport 53 -m state –state NEW -i $LAN -j ACCEPT
+
+#ssh
+$IPTABLES -A INPUT -p tcp –dport 22 -m state –state NEW -i $LAN -j DROP
+$IPTABLES -A FORWARD -p tcp –dport 22 -m state –state NEW -i $LAN -j DROP
+
+#net
+$IPTABLES -A FORWARD -p tcp –dport 443 -m state –state NEW -i $LAN -o $WAN -j ACCEPT
+$IPTABLES -A FORWARD -p tcp –dport 80 -m state –state NEW -i $LAN -s 172.16.1.1/24 -j ACCEPT
+
+# PORTS GENERAUX #
+$IPTABLES -t filter -A INPUT -p udp –dport 123 -i $LAN -j ACCEPT
+$IPTABLES -t filter -A INPUT -p tcp –dport 8080 -i $LAN -j ACCEPT
+$IPTABLES -t filter -A INPUT -p udp –dport 8080 -i $LAN -j ACCEPT
+echo – Services de bases : [OK]

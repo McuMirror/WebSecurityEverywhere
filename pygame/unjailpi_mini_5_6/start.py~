@@ -1,0 +1,796 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import io
+import os
+import pygame
+from pygame.locals import *
+
+import time
+from time import sleep
+
+import data 
+from data import *
+
+# Public IP
+import urllib2
+import socket
+# import time
+import signal
+
+# ESSID
+import array
+import fcntl
+# import socket
+import struct
+
+# Initialization -----------------------------------------------------------
+
+# from evdev import InputDevice, list_devices
+# devices = map(InputDevice, list_devices())
+# eventX=""
+# for dev in devices:
+	# if dev.name == "ADS7846 Touchscreen":
+		# eventX = dev.fn
+# print eventX
+
+# Init framebuffer/touchscreen environment variables
+os.environ["SDL_FBDEV"] = "/dev/fb1"
+os.environ["SDL_VIDEO_CENTERED"] = "1"
+os.environ["SDL_MOUSEDRV"] = "TSLIB"
+os.environ["SDL_MOUSEDEV"] = "/dev/input/touchscreen"
+
+
+# Init pygame and screen
+print "Initting..."
+pygame.init()
+print "Setting Mouse invisible..."
+pygame.mouse.set_visible(False)
+print "Setting fullscreen..."
+modes = pygame.display.list_modes(16)
+screen = pygame.display.set_mode(modes[0], FULLSCREEN, 16)
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+maxLength = {
+	"interface": 16,
+	"essid": 32
+}
+calls = {
+	"SIOCGIWESSID": 0x8B1B
+}
+
+# GeoIP
+## Quick Documentation ##
+# Create your GeoIP instance with appropriate access flag. STANDARD reads data 
+# from disk when needed, MEMORY_CACHE loads database into memory on instantiation 
+# and MMAP_CACHE loads database into memory using mmap.
+# import pygeoip gi = pygeoip.GeoIP('/path/to/GeoIP.dat', pygeoip.MEMORY_CACHE)
+import GeoIP
+# import pygeoip
+gi = GeoIP.open('/home/pi/scripts/misc/GeoLiteCity.dat',GeoIP.GEOIP_STANDARD)
+# gi = GeoIP.open('GeoLiteCity.dat',GeoIP.GEOIP_STANDARD)
+
+data_py = os.path.abspath(os.path.dirname(__file__))
+data_dir = os.path.normpath(os.path.join(data_py, '..', 'data'))
+
+def filepath(filename):
+    return os.path.join(data_dir, filename)
+
+def load(filename, mode='rb'):
+
+    return open(os.path.join(data_dir, filename), mode)
+
+def load_image(filename):
+	filename = filepath(filename)
+	try:
+		image = pygame.image.load(filename)
+		image = pygame.transform.scale(image, (image.get_width()*2, image.get_height()*2))
+	except pygame.error:
+		raise SystemExit, "Unable to load: " + filename
+	return image.convert_alpha()
+
+ext_ip = ""
+ext_ip_loc = ""
+ext_ip_city_loc = ""
+ip_check = 1
+socket.setdefaulttimeout(GET_EXTIP_TIMEOUT)
+
+eth0 = ""
+wlan0 = ""
+wlan1 = ""
+usb0 = ""
+tun0 = ""
+
+ESSID = ""
+wlan_quality = ""
+
+cputemp = ""
+load_average = ""
+
+fond = pygame.image.load(data.filepath(BACK_PICTURE))
+template = pygame.image.load(data.filepath(template_PICTURE))
+
+internet_on_32_logo = pygame.image.load(data.filepath("icons/"+str(NETWORKMAIN_ICONSIZE)+"/"+NETWORK_INTON))
+internet_off_32_logo = pygame.image.load(data.filepath("icons/"+str(NETWORKMAIN_ICONSIZE)+"/"+NETWORK_INTOFF))
+internet_tor_32_logo = pygame.image.load(data.filepath("icons/"+str(NETWORKMAIN_ICONSIZE)+"/"+NETWORK_INTTOR))
+internet_vpn_32_logo = pygame.image.load(data.filepath("icons/"+str(NETWORKMAIN_ICONSIZE)+"/"+NETWORK_INTVPN))
+client_on_32_logo = pygame.image.load(data.filepath("icons/"+str(NETWORKMAIN_ICONSIZE)+"/"+NETWORK_CLION))
+client_off_32_logo = pygame.image.load(data.filepath("icons/"+str(NETWORKMAIN_ICONSIZE)+"/"+NETWORK_CLIOFF))
+ap_on_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_APON))
+ap_off_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_APOFF))
+client_on_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_CLION))
+client_off_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_CLIOFF))
+eth_on_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_ETHON))
+eth_off_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_ETHOFF))
+usb_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_USB))
+tor_16_logo = pygame.image.load(data.filepath("icons/"+str(TOPBAR_ICONSIZE)+"/"+TOPBAR_TOR))
+
+tor_off_button = pygame.image.load(data.filepath("icons/"+str(MISC_ICONSIZE)+"/"+BOTTOMBAR_TOR_OFF))
+tor_on_button = pygame.image.load(data.filepath("icons/"+str(MISC_ICONSIZE)+"/"+BOTTOMBAR_TOR_ON))
+tor_x = 0+MARGIN_X
+tor_y = LCD_HEIGHT-MISC_ICONSIZE-MARGIN_Y
+
+vpn_off_button = pygame.image.load(data.filepath("icons/"+str(MISC_ICONSIZE)+"/"+BOTTOMBAR_VPN_OFF))
+vpn_on_button = pygame.image.load(data.filepath("icons/"+str(MISC_ICONSIZE)+"/"+BOTTOMBAR_VPN_ON))
+vpn_x = LCD_WIDTH-MISC_ICONSIZE-MARGIN_X
+vpn_y = LCD_HEIGHT-MISC_ICONSIZE-MARGIN_Y
+
+menu_button = pygame.image.load(data.filepath("icons/"+str(MISC_ICONSIZE)+"/"+BOTTOMBAR_MENU))
+menu_button_x = LCD_WIDTH/2-MISC_ICONSIZE
+menu_button_y = LCD_HEIGHT-MISC_ICONSIZE-MARGIN_Y
+
+bloc_lb = pygame.image.load(data.filepath("bloc1_144x96.png"))
+bloc_lb_x = 0+MARGIN_X
+bloc_lb_y = LCD_HEIGHT/2-10
+
+import GeoIP
+#gi = GeoIP.open('/home/pi/scripts/misc/GeoLiteCity.dat',GeoIP.GEOIP_STANDARD)
+gi = GeoIP.open('/home/pi/scripts/pygame/data/GeoLiteCity.dat',GeoIP.GEOIP_STANDARD)
+
+def get_ESSID(interface):
+	global ESSID
+	"""Return the ESSID for an interface, or None if we aren't connected."""
+	if os.path.exists('/sys/class/net/'+interface):
+		try:
+			essid = array.array("c", "\0" * maxLength["essid"])
+			essidPointer, essidLength = essid.buffer_info()
+			request = array.array("c",
+				interface.ljust(maxLength["interface"], "\0") +
+				struct.pack("PHH", essidPointer, essidLength, 0)
+			)
+			fcntl.ioctl(sock.fileno(), calls["SIOCGIWESSID"], request)
+			field = essid.tostring().rstrip("\0")
+			ESSID = field
+			print("ESSID - "+field+"")
+			return field
+		except:
+			field = "Client not connected"
+			ESSID = field
+			print("ESSID - "+field+"")
+			return field			
+	else:
+		field = "Client : No interface"
+		ESSID = field
+		print("ESSID - "+field+"")
+		return field
+
+def get_ext_ip():
+	# check_ext_ip.stop()
+	if ip_check == 1:
+		start_time = time.time()
+		global ext_ip
+		global ext_ip_loc
+		global ext_ip_city_loc
+		global ext_ip_lat
+		global ext_ip_lon
+		global page
+		try:
+			url = 'http://www.monip.org/'
+			page = urllib2.urlopen(url, timeout=GET_EXTIP_TIMEOUT).read()
+			ext_ip = page.split("IP : ")[1].split("<br>")[0]
+			elapsed_time = time.time() - start_time
+			gir = gi.record_by_addr(ext_ip)
+			
+			if gir != None:
+				ext_ip_loc = format(gir['country_name'])
+				ext_ip_city_loc = format(gir['city'])
+				if ext_ip_city_loc == "None":
+					ext_ip_city_loc = "Unknown City"
+				ext_ip_lat = format(gir['latitude'])
+				ext_ip_lon = format(gir['longitude'])
+			else:
+				ext_ip_loc = "???"
+				ext_ip_city_loc = "? 1 ?"
+				ext_ip_lat = "???"
+				ext_ip_lon = "???"
+				
+		except urllib2.URLError as e:
+			ext_ip = "null"
+			ext_ip_loc = "null"
+			ext_ip_city_loc = "null"
+			ext_ip_lat = "null"
+			ext_ip_lon = "null"
+			elapsed_time = time.time() - start_time
+			print(e)
+		except IOError as e:
+			ext_ip = "null"
+			ext_ip_loc = "null"
+			ext_ip_city_loc = "null"
+			ext_ip_lat = "null"
+			ext_ip_lon = "null"
+			elapsed_time = time.time() - start_time
+			print(e)
+		except socket.timeout as e:
+			ext_ip = "null"
+			ext_ip_loc = "null"
+			ext_ip_city_loc = "null"
+			ext_ip_lat = "null"
+			ext_ip_lon = "null"
+			elapsed_time = time.time() - start_time
+			print(e)
+		except:
+			ext_ip = "null"
+			ext_ip_loc = "null"
+			ext_ip_city_loc = "null"
+			ext_ip_lat = "null"
+			ext_ip_lon = "null"
+			elapsed_time = time.time() - start_time
+		ext_ip = format(ext_ip)
+		print("NETWORK - EXT IP ("+format(elapsed_time)+"): "+ext_ip+" | "+ext_ip_loc+" | "+ext_ip_city_loc+" | "+ext_ip_lat+" | "+ext_ip_lon+"")
+		#return(ext_ip)
+	else:
+		ext_ip = "SWITCHING IP"
+		ext_ip_loc = "Please wait..."
+		ext_ip_city_loc = ""
+		ext_ip_lat = ""
+		ext_ip_lon = ""
+		print("NETWORK - EXT IP : ABORTED")
+	# check_ext_ip.start()
+
+def get_cputemp():
+	global cputemp
+	cputemp = read_cpu_temp()
+
+def get_cpu_usage():
+	global cpu_usage
+	cpu_usage = read_cpu_usage()
+
+def get_load_average():
+	global load_average
+	load_average = read_load_average()
+	
+def data_get_ext_ip():
+	return get_ext_ip()
+
+def data_get_ip_eth0():
+	global eth0
+	eth0 = get_iface_ip("eth0")
+
+def data_get_ip_AP():
+	global AP
+	AP = get_iface_ip(WLAN_AP)
+	if WLAN_AP == 'wlan0':
+		global wlan0
+		wlan0 = AP
+	elif WLAN_AP == 'wlan1':
+		global wlan1
+		wlan1 = AP
+
+def data_get_ip_CLI():
+	global CLI
+	CLI = get_iface_ip(WLAN_CLIENT)
+	if WLAN_CLIENT == 'wlan0':
+		global wlan0
+		wlan0 = CLI
+	elif WLAN_CLIENT == 'wlan1':
+		global wlan1
+		wlan1 = CLI
+
+def data_get_ip_usb0():
+	global usb0
+	usb0 = get_iface_ip("usb0")
+	
+def data_get_ip_tun0():
+	global tun0
+	tun0 = get_iface_ip("tun0")
+
+def data_get_ESSID(interface):
+	return get_ESSID(interface)
+
+def reset_wlan_ap(screen):
+	show_popup(screen, "Reset Access Point")
+	os.system('sudo killall hostapd')
+	os.system('sudo ifdown '+WLAN_AP+'')
+	os.system('sudo rm -rf /var/run/hostapd/'+WLAN_AP+'')
+
+#	os.system('sudo iptables -F')
+#	os.system('sudo iptables -t nat -F')
+#	os.system('sudo iptables -t nat -A POSTROUTING -o '+WLAN_CLIENT+' -j MASQUERADE')
+#	os.system('sudo iptables -A FORWARD -i '+WLAN_CLIENT+' -o '+WLAN_AP+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
+#	os.system('sudo iptables -A FORWARD -i '+WLAN_AP+' -o '+WLAN_CLIENT+' -j ACCEPT')
+#	os.system('sudo iptables -A FORWARD -i '+WLAN_CLIENT+' -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT')
+#	os.system('sudo iptables -A FORWARD -i eth0 -o '+WLAN_CLIENT+' -j ACCEPT')
+#	
+#	os.system('sudo iptables -t nat -I PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 53')
+#	os.system('sudo iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 53')
+
+	iptables_restore()
+
+	os.system('sudo ifup '+WLAN_AP+'')
+	os.system('sudo hostapd -B /etc/hostapd/hostapd.conf &')
+	os.system('sudo service dnsmasq restart')
+	network_infos(screen)
+	
+def reset_wlan_client(screen):
+	show_popup(screen, "Reset Client adapter")
+	os.system('sudo ifdown '+WLAN_CLIENT+'')
+	os.system('sudo ifup '+WLAN_CLIENT+' &')
+	network_infos(screen)
+	
+def reset_eth(screen):
+	show_popup(screen, "Reset ethernet interface")
+	os.system('sudo ifdown eth0')
+	os.system('sudo ifup eth0')
+	os.system('sudo /etc/init.d/dnsmasq restart &')
+	network_infos(screen)
+	
+def update(background, screen):
+	global info
+
+	load_avg_string = load_average
+	clock = get_time()
+	dirty_rects = []
+
+	y = 0+MARGIN_Y
+	x = 0+MARGIN_X
+	
+	if BACK_COLOR != None:
+		screen.fill(BACK_COLOR)
+	
+	screen.fill(black)	
+#	screen.blit(fond, (0,0))
+	screen.blit(template, (0,0))
+	
+	if pygame.font:
+		if AP != 'Not connected' and AP != 'Not found' :
+			screen.blit(ap_on_16_logo, (x,y))
+			x = x+TOPBAR_ICONSIZE
+		if CLI != 'Not connected' and CLI != 'Not found':
+			screen.blit(client_on_16_logo, (x,y))
+			x = x+TOPBAR_ICONSIZE
+		if eth0 != 'Not connected' and eth0 != 'Not found':
+			screen.blit(eth_on_16_logo, (x,y))
+			x = x+TOPBAR_ICONSIZE
+		if usb0 != 'Not connected' and usb0 != 'Not found':
+			screen.blit(usb_16_logo, (x,y))
+			x = x+TOPBAR_ICONSIZE
+			
+		if check_tor() == True:
+			screen.blit(tor_16_logo, (x,y))
+			x = x+TOPBAR_ICONSIZE
+			b_tor = screen.blit(tor_on_button, (tor_x, tor_y))
+			torEnabled = True
+		else:
+			b_tor = screen.blit(tor_off_button, (tor_x, tor_y))
+			torEnabled = False
+			
+		if check_vpn("tun0") == 1:
+			b_vpn = screen.blit(vpn_on_button, (vpn_x, vpn_y))
+		else:
+			b_vpn = screen.blit(vpn_off_button, (vpn_x, vpn_y))
+			
+		font = pygame.font.Font(filepath(TOPBAR_FONT), TOPBAR_FONTSIZE)
+		label = font.render(''+cputemp+' C, '+load_average+'%', 1, (green))
+		screen.blit(label, (LCD_WIDTH-label.get_width()-MARGIN_X,y))
+		
+		font = pygame.font.Font(filepath(CLOCK_FONT), CLOCK_FONTSIZE)
+		label = font.render(clock, 1, (CLOCK_FONTCOLOR))
+		screen.blit(label, (LCD_WIDTH/2-label.get_width()/2,y))
+			
+		x = 0 + MARGIN_X
+		y = y + font.get_height()
+		font = pygame.font.Font(filepath(PAGETITLE_FONT), PAGETITLE_FONTSIZE)
+		label = font.render("UnJailPi", 1, (PAGETITLE_FONTCOLOR))
+		screen.blit(label, (LCD_WIDTH-label.get_width()-MARGIN_X,y))
+		
+		part1_y = y+font.get_height()+SPACE
+		if ext_ip != 'null':
+			if check_tor() == True:
+				screen.blit(internet_tor_32_logo, (17,65))
+			else:
+				if check_vpn("tun0") == True:
+					screen.blit(internet_vpn_32_logo, (17,65))
+				else:
+					screen.blit(internet_on_32_logo, (17,65))
+				
+				
+			label_x = x+NETWORKMAIN_ICONSIZE+SPACE
+			label_y = part1_y+SPACE
+
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			if torEnabled == True:
+				label = font.render(ext_ip, 1, (white))
+#				label = font.render("real ip hidden", 1, (white))
+			else:
+				label = font.render("real ip hidden", 1, (white))
+				label = font.render(ext_ip, 1, (white))
+				
+			screen.blit(label, (55,label_y))
+			label_y = label_y+font.get_height()+SPACE	
+			
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render(ext_ip_loc, 1, (white))
+			screen.blit(label, (55,label_y))
+			label_y = label_y+font.get_height()+SPACE	
+
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render(ext_ip_city_loc, 1, (white))
+			screen.blit(label, (55,label_y))
+		else:
+			screen.blit(internet_off_32_logo, (17,65))
+			label_x = x+NETWORKMAIN_ICONSIZE+SPACE
+			label_y = part1_y+SPACE
+
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render("NO INTERNET", 1, (white))
+			screen.blit(label, (55,label_y))
+			label_y = label_y+font.get_height()+SPACE	
+			
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render("", 1, (white))
+			screen.blit(label, (55,label_y))
+			label_y = label_y+font.get_height()+SPACE	
+
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render("", 1, (white))
+			screen.blit(label, (55,label_y))
+
+		y = label_y+font.get_height()+6
+	
+		if wlan1 != 'null':
+			screen.blit(client_on_32_logo, (LCD_WIDTH / 2,part1_y+8))
+			label_x = LCD_WIDTH / 2 + NETWORKMAIN_ICONSIZE + SPACE
+			label_y = part1_y+SPACE
+
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render(ESSID, 1, (white))
+			screen.blit(label, (label_x,label_y))
+			label_y = label_y+font.get_height()+SPACE
+		else:
+			screen.blit(client_off_32_logo, (x,part1_y+8))
+			label_x = NETWORKMAIN_ICONSIZE+SPACE
+			label_y = y+SPACE
+
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render(ESSID, 1, (black))
+			screen.blit(label, (label_x,label_y))
+			label_y = label_y+font.get_height()+SPACE		
+
+		x = MARGIN_X
+		
+		if eth0 != 'null':
+			
+			label_x = 64
+			label_y = 114
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)	
+			label = font.render(eth0, 1, (white))
+			screen.blit(label, (label_x,label_y))
+			y = y+font.get_height()+SPACE
+		
+		if wlan0 != 'null':
+			
+			label_x = 64
+			label_y = label_y + 22
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)			
+			label = font.render(wlan0, 1, (white))
+			screen.blit(label, (label_x,label_y))
+			y = y+font.get_height()+SPACE
+			
+		if tun0 != 'null':
+			
+			label_x = 214
+			label_y = 114
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render(tun0, 1, (white))
+			screen.blit(label, (label_x,label_y))
+			
+		if wlan1 != 'null':
+			
+			label_x = 214
+			label_y = label_y + 22
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)			
+			label = font.render(wlan1, 1, (white))
+			screen.blit(label, (label_x,label_y))
+			y = y+font.get_height()+SPACE
+
+		if usb0 != 'null':
+			
+			label_x = 214
+			label_y = label_y + 22
+			font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+			label = font.render(usb0, 1, (white))
+			screen.blit(label, (label_x,label_y))
+			y = y+font.get_height()+SPACE
+			
+		
+		
+		b_menu = screen.blit(menu_button, (menu_button_x, menu_button_y))
+		
+	return dirty_rects
+	
+def update_event(screen):
+	global ip_check
+	global ext_ip
+	global ext_ip_loc
+	global ext_ip_city_loc
+	
+	for e in pygame.event.get():
+		if e.type == pygame.MOUSEBUTTONDOWN:
+			pos = pygame.mouse.get_pos()
+			b_tor_p = pygame.Rect(tor_x, tor_y, BOTTOMBAR_ICONSIZE, BOTTOMBAR_ICONSIZE)
+			b_vpn_p = pygame.Rect(vpn_x, vpn_y, BOTTOMBAR_ICONSIZE, BOTTOMBAR_ICONSIZE)
+			b_menu_p = pygame.Rect(menu_button_x, menu_button_y, BOTTOMBAR_ICONSIZE*2, BOTTOMBAR_ICONSIZE)
+			if b_tor_p.collidepoint(pos):
+				ip_check = 0
+				
+				if check_tor() == True:
+					ext_ip = "RESTORING IP"
+					ext_ip_loc = "Please wait..."
+					ext_ip_city_loc = ""
+					show_popup(screen, "Restoring normal IP")
+					os.system('sudo service tor stop &')			
+#					os.system('sudo iptables -F')
+#					os.system('sudo iptables -t nat -F')
+#					os.system('sudo iptables -t nat -A POSTROUTING -o wlan1 -j MASQUERADE')
+#					os.system('sudo iptables -A FORWARD -i wlan1 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT')
+#					os.system('sudo iptables -A FORWARD -i wlan0 -o wlan1 -j ACCEPT		')		
+#					os.system('sudo iptables -A FORWARD -i wlan1 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT')
+#					os.system('sudo iptables -A FORWARD -i eth0 -o wlan1 -j ACCEPT')
+#					
+#					os.system('sudo iptables -t nat -I PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 53')
+#					os.system('sudo iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 53')
+
+					iptables_restore()
+	
+				else:
+					show_popup(screen, "Getting new internet IP")
+					ext_ip = "CHANGING IP"
+					ext_ip_loc = "Please wait..."
+					ext_ip_city_loc = ""
+					os.system('sudo sh /home/pi/scripts/tor/tor_start.sh &')
+					
+				ip_check = 1
+			if b_vpn_p.collidepoint(pos):
+				if check_vpn("tun0") == 1:
+					ext_ip = "RESTORING IP"
+					ext_ip_loc = "Please wait..."
+					ext_ip_city_loc = ""
+					show_popup(screen, "Restoring normal IP")
+					Openvpn_Stop()
+				else:
+					if check_tor() == True:
+						ext_ip = "RESTORING IP"
+						ext_ip_loc = "Please wait..."
+						ext_ip_city_loc = ""
+						show_popup(screen, "Stopping TOR")
+						os.system('sudo service tor stop &')	
+					show_popup(screen, "Starting VPN client")		
+#					os.system('sudo iptables -F')
+#					os.system('sudo iptables -t nat -F')
+#					os.system('sudo iptables -t nat -A POSTROUTING -o wlan1 -j MASQUERADE')
+#					os.system('sudo iptables -A FORWARD -i wlan1 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT')
+#					os.system('sudo iptables -A FORWARD -i wlan0 -o wlan1 -j ACCEPT		')		
+#					os.system('sudo iptables -A FORWARD -i wlan1 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT')
+#					os.system('sudo iptables -A FORWARD -i eth0 -o wlan1 -j ACCEPT		')
+
+					iptables_restore()
+					Openvpn_Start()
+				
+			if b_menu_p.collidepoint(pos):
+				check_ext_ip.stop()
+				check_cputemp.stop()
+				check_ip_eth0.stop()
+				check_ip_AP.stop()
+				check_ip_CLI.stop()
+				check_ip_usb0.stop()
+				check_ip_tun0.stop()
+				check_essid.stop()
+				check_load_average.stop()
+				
+#				screen.fill((0, 0, 0))
+#				pygame.display.flip()
+				options_menu(screen)
+				
+		
+		
+		if e.type == KEYDOWN:
+			if e.key in (K_SPACE, K_RETURN):
+				
+				check_ext_ip.stop()
+				check_cputemp.stop()
+				check_ip_eth0.stop()
+				check_ip_AP.stop()
+				check_ip_CLI.stop()
+				check_ip_usb0.stop()
+				check_ip_tun0.stop()
+				check_essid.stop()
+				check_load_average.stop()
+				
+#				screen.fill((0, 0, 0))
+#				pygame.display.flip()
+				menu(screen)
+			if e.key == pygame.K_DOWN:
+				check_ext_ip.stop()
+				ip_check = 0
+				ext_ip = "SWITCHING IP"
+				ext_ip_loc = "Please wait..."
+				ext_ip_city_loc = ""
+				if process_exists("openvpn") == True:
+					os.system('sudo nohup killall openvpn > /dev/null 2>&1 &')
+				if process_exists("tor") == True:
+					show_popup(screen, "Getting new internet ID")
+					os.system('sudo service tor start &')
+#					os.system('sudo /home/pi/scripts/tor/tor_restart.sh &')
+				else:
+					show_popup(screen, "Changing internet ID")		
+					os.system('sudo service tor stop &')
+#					os.system('sudo /home/pi/scripts/tor/tor_start.sh &')
+				get_ext_ip()
+				ip_check = 1
+				check_ext_ip.start()
+				
+def iptables_restore():
+	os.system('sudo iptables -F')
+	os.system('sudo iptables -t nat -F')
+	os.system('sudo iptables -t nat -A POSTROUTING -o wlan1 -j MASQUERADE')
+	os.system('sudo iptables -A FORWARD -i wlan1 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT')
+	os.system('sudo iptables -A FORWARD -i wlan0 -o wlan1 -j ACCEPT		')		
+	os.system('sudo iptables -A FORWARD -i eth0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT')
+	os.system('sudo iptables -A FORWARD -i wlan0 -o eth0 -j ACCEPT')
+
+	os.system('sudo iptables -t nat -I PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 53')
+	os.system('sudo iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 53')
+
+def adblock_update():
+	os.system('sudo /home/pi/scripts/dnsmasq/dnsmasq_ad_list.sh')
+					
+def check_tor():
+#	os.system("tor --quiet &")
+	ps_info = subprocess.check_output(["ps", "-A"])
+	ps_info = str(ps_info)
+	if re.search(r'\stor\s', ps_info): return True
+	else: return False
+	
+def check_vpn(interface):
+	if os.path.exists('/sys/class/net/'+interface):
+		try:
+			s = subprocess.check_output(["ip","addr","show",interface])
+			ip = s.split('\n')[2].strip().split(' ')[1].split('/')[0]
+			return 1
+		except:
+			return 2
+	else:
+		return 0
+
+def bootmenu():
+	os.system('sudo python /home/pi/scripts/pygame/bootmenu_2/start.py &')
+	raise SystemExit
+		
+def network_infos(screen):
+	font = pygame.font.Font(filepath(MAIN_FONT), MAIN_FONTSIZE)
+	black = pygame.Surface((LCD_WIDTH, LCD_HEIGHT))
+	
+	background = pygame.Surface((LCD_WIDTH, LCD_HEIGHT)).convert()
+	surf = pygame.Surface((LCD_WIDTH, LCD_HEIGHT)).convert()
+	popup = pygame.Surface((LCD_WIDTH, LCD_HEIGHT)).convert()
+	
+	if BACK_COLOR != None:
+		screen.fill(BACK_COLOR)
+	#update(background, surf)
+	# global check_uart
+	global check_cputemp
+	global check_ip_eth0
+	global check_ip_AP
+	global check_ip_CLI
+	global check_ip_usb0
+	global check_ip_tun0
+	global check_essid
+	global check_ext_ip
+	# global check_cputemp
+	# global check_uptime
+	# global check_cpu_usage
+	global check_load_average
+	# global check_arduino
+	
+	check_cputemp = MyTimer(GET_CPUTEMP_DELAY, get_cputemp)
+	check_ip_eth0 = MyTimer(GET_IP_DELAY, data_get_ip_eth0)
+	check_ip_AP = MyTimer(GET_IP_DELAY, data_get_ip_AP)
+	check_ip_CLI = MyTimer(GET_IP_DELAY, data_get_ip_CLI)
+	check_ip_usb0 = MyTimer(GET_IP_DELAY, data_get_ip_usb0)
+	check_ip_tun0 = MyTimer(GET_IP_DELAY, data_get_ip_tun0)
+	check_essid = MyTimer(GET_ESSID_DELAY, get_ESSID, [WLAN_CLIENT])
+	check_ext_ip = MyTimer(GET_EXTIP_DELAY, get_ext_ip)
+	check_load_average = MyTimer(GET_LOAD_AVERAGE_DELAY, get_load_average)
+	
+	get_cputemp()
+	get_ESSID(WLAN_CLIENT)
+	data_get_ip_eth0()
+	data_get_ip_AP()
+	# get_ip_wlan1()
+	data_get_ip_CLI()
+	data_get_ip_usb0()
+	data_get_ip_tun0()
+	#get_ext_ip()
+	
+	# check_uart.start()
+	check_cputemp.start()
+	check_ip_eth0.start()
+	check_ip_AP.start()
+	check_ip_CLI.start()
+	check_ip_usb0.start()
+	check_ip_tun0.start()
+	check_essid.start()
+	check_ext_ip.start()
+	# check_cputemp.start()
+	# check_uptime.start()
+	# check_cpu_usage.start()
+	check_load_average.start()
+	# check_arduino.start()
+	
+	while 1:
+		y = 0	
+
+		update(background, surf)
+		update_event(screen)
+	
+		screen.fill((0, 0, 0))
+		rotatedscreen = pygame.transform.rotate(surf, 0)
+		screen.blit(rotatedscreen, (0, 0))
+	
+		pygame.display.flip()
+		pygame.time.wait(250)
+
+#################
+# ---- MENUS ----
+#################
+
+def options_menu(screen):
+	screen.fill(black)
+	# check_tor()
+	
+	while True:
+		choix = menu0(['Retour','','Options reseau','Systeme'],22)
+		if choix == 'Retour' : network_infos(screen)
+		if choix == 'Options reseau' : network_options(screen)
+		if choix == 'Systeme' : system_menu(screen)
+		pygame.display.flip()
+
+def network_options(screen):
+	screen.fill(black)
+	# check_tor()
+	
+	while True:
+		choix = menu0(['Retour','','Reset eth0','Reset wlan0 (AP)','Reset wlan1 (client)','Systeme'],22)
+		if choix == 'Retour' : options_menu(screen)
+		if choix == 'Reset eth0' : reset_eth(screen)
+		if choix == 'Reset wlan0 (AP)' : reset_wlan_ap(screen)
+		if choix == 'Reset wlan1 (client)' : reset_wlan_client(screen)
+		if choix == 'Systeme' : system_menu(screen)
+		pygame.display.flip()
+		
+def system_menu(screen):
+	screen.fill(black)
+	# check_tor()
+	
+	while True:
+		choix = menu0(['Retour','','Retour au menu','Retour console','Rebooter','Arreter'],22)
+		if choix == 'Retour' : options_menu(screen)
+		if choix == 'Retour au menu' : bootmenu()
+		if choix == 'Retour console' : exit()
+		if choix == 'Rebooter' : Reboot(screen)
+		if choix == 'Arreter' : Shutdown(screen)
+		pygame.display.flip()
+
+		
+				
+network_infos(screen)

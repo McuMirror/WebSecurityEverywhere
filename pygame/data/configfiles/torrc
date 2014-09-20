@@ -1,0 +1,22 @@
+Log notice file /var/log/tor/notices.log
+VirtualAddrNetwork 10.192.0.0/10
+AutomapHostsSuffixes .onion,.exit
+AutomapHostsOnResolve 1
+TransPort 9040
+TransListenAddress 127.0.0.1
+TransListenAddress 192.168.200.1
+DNSPort 53
+DNSListenAddress 127.0.0.1
+DNSListenAddress 192.168.200.1
+AvoidDiskWrites 1
+ControlPort 9051
+
+### Lock to specific country exit nodes
+### Use comma separated country code(s) and uncomment
+StrictExitNodes 1
+#ExitNodes {GB},{UK}
+
+### Blacklist specific country exit nodes
+### Use comma separated country code(s) and uncomment
+#ExcludeExitNodes {us}
+
