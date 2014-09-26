@@ -4,8 +4,7 @@
 NON_TOR="192.168.1.0/24 192.168.200.0/24"
 
 # the UID Tor runs as
-#TOR_UID="108"
-TOR_UID="109"
+TOR_UID=`getent passwd debian-tor | cut -d ":" -f 3`
 
 # Tor's TransPort
 TRANS_PORT="9040"
