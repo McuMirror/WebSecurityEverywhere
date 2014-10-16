@@ -23,6 +23,11 @@
 
 
 ##########################
+# 5_11
+# added random access point security key generation, with its menu page (only "generate a new key" feature for the moment)
+# hostapd config file read / parse / save functions
+# added upis True/False config variable to disable upis related features
+######
 # 5_9
 # added ext ip check function with TOR check page (GET_IP_METHOD = 1 : apify, 2 : TOR check)
 # added upis over temperature alert icon
@@ -239,312 +244,8 @@ def load_image(filename):
 import GeoIP
 gi = GeoIP.open(data.filepath('GeoLiteCity.dat'),GeoIP.GEOIP_STANDARD)
 
-mainmenuData = ['Network',
-				'Settings',
-				'Misc',
-				'System',
-				'Back'
-			]
-			
-networkmenuData = ['Reset WiFi AP',
-				'Reset WiFi Client',
-				'Reset Ethernet',
-				'TOR settings',
-				'Back'
-			]
-			
-settingsmenuData = ['Screen Timeout',
-				'Back'
-			]
-			
-miscmenuData = ['Power',
-				'Back'
-			]
-			
-systemmenuData = ['Menu',
-				'Console',
-				'Reboot',
-				'Halt',
-				'Back'
-			]
-			
-displayDelayData = [0, 5, 10, 15, 30, 60, 120, 240]
-
-countryData = [("ASCENSION ISLAND","ac"),
-("AFGHANISTAN","af"),
-("ALAND","ax"),
-("ALBANIA","al"),
-("ALGERIA","dz"),
-("ANDORRA","ad"),
-("ANGOLA","ao"),
-("ANGUILLA","ai"),
-("ANTARCTICA","aq"),
-("ANTIGUA & BARBUDA","ag"),
-("ARGENTINA REPUBLIC","ar"),
-("ARMENIA","am"),
-("ARUBA","aw"),
-("AUSTRALIA","au"),
-("AUSTRIA","at"),
-("AZERBAIJAN","az"),
-("BAHAMAS","bs"),
-("BAHRAIN","bh"),
-("BANGLADESH","bd"),
-("BARBADOS","bb"),
-("BELARUS","by"),
-("BELGIUM","be"),
-("BELIZE","bz"),
-("BENIN","bj"),
-("BERMUDA","bm"),
-("BHUTAN","bt"),
-("BOLIVIA","bo"),
-("BOSNIA & HERZEGOVINA","ba"),
-("BOTSWANA","bw"),
-("BOUVET ISLAND","bv"),
-("BRAZIL","br"),
-("BRITISH INDIAN OCEAN TERR","io"),
-("BRITISH VIRGIN ISLANDS","vg"),
-("BRUNEI DARUSSALAM","bn"),
-("BULGARIA","bg"),
-("BURKINA FASO","bf"),
-("BURUNDI","bi"),
-("CAMBODIA","kh"),
-("CAMEROON","cm"),
-("CANADA","ca"),
-("CAPE VERDE","cv"),
-("CAYMAN ISLANDS","ky"),
-("CENTRAL AFRICAN REPUBLIC","cf"),
-("CHAD","td"),
-("CHILE","cl"),
-("CHINA","cn"),
-("CHRISTMAS ISLANDS","cx"),
-("COCOS ISLANDS","cc"),
-("COLOMBIA","co"),
-("COMORAS","km"),
-("CONGO","cg"),
-("CONGO DEMOCRATIC REPUBLIC","cd"),
-("COOK ISLANDS","ck"),
-("COSTA RICA","cr"),
-("COTE D IVOIRE","ci"),
-("CROATIA","hr"),
-("CUBA","cu"),
-("CYPRUS","cy"),
-("CZECH REPUBLIC","cz"),
-("DENMARK","dk"),
-("DJIBOUTI","dj"),
-("DOMINICA","dm"),
-("DOMINICAN REPUBLIC","do"),
-("EAST TIMOR","tp"),
-("ECUADOR","ec"),
-("EGYPT","eg"),
-("EL SALVADOR","sv"),
-("EQUATORIAL GUINEA","gq"),
-("ESTONIA","ee"),
-("ETHIOPIA","et"),
-("FALKLAND ISLANDS","fk"),
-("FAROE ISLANDS","fo"),
-("FIJI","fj"),
-("FINLAND","fi"),
-("FRANCE","fr"),
-("FRANCE METROPOLITAN","fx"),
-("FRENCH GUIANA","gf"),
-("FRENCH POLYNESIA","pf"),
-("FRENCH SOUTHERN TERRITORIES","tf"),
-("GABON","ga"),
-("GAMBIA","gm"),
-("GEORGIA","ge"),
-("GERMANY","de"),
-("GHANA","gh"),
-("GIBRALTER","gi"),
-("GREECE","gr"),
-("GREENLAND","gl"),
-("GRENADA","gd"),
-("GUADELOUPE","gp"),
-("GUAM","gu"),
-("GUATEMALA","gt"),
-("GUINEA","gn"),
-("GUINEA-BISSAU","gw"),
-("GUYANA","gy"),
-("HAITI","ht"),
-("HEARD & MCDONALD ISLAND","hm"),
-("HONDURAS","hn"),
-("HONG KONG","hk"),
-("HUNGARY","hu"),
-("ICELAND","is"),
-("INDIA","in"),
-("INDONESIA","id"),
-("IRAN, ISLAMIC REPUBLIC OF","ir"),
-("IRAQ","iq"),
-("IRELAND","ie"),
-("ISLE OF MAN","im"),
-("ISRAEL","il"),
-("ITALY","it"),
-("JAMAICA","jm"),
-("JAPAN","jp"),
-("JORDAN","jo"),
-("KAZAKHSTAN","kz"),
-("KENYA","ke"),
-("KIRIBATI","ki"),
-("KOREA - DEM. PEOPLES REP OF","kp"),
-("KOREA - REPUBLIC OF","kr"),
-("KUWAIT","kw"),
-("KYRGYZSTAN","kg"),
-("LAO PEOPLES DEM. REPUBLIC","la"),
-("LATVIA","lv"),
-("LEBANON","lb"),
-("LESOTHO","ls"),
-("LIBERIA","lr"),
-("LIBYAN ARAB JAMAHIRIYA","ly"),
-("LIECHTENSTEIN","li"),
-("LITHUANIA","lt"),
-("LUXEMBOURG","lu"),
-("MACAO","mo"),
-("MACEDONIA","mk"),
-("MADAGASCAR","mg"),
-("MALAWI","mw"),
-("MALAYSIA","my"),
-("MALDIVES","mv"),
-("MALI","ml"),
-("MALTA","mt"),
-("MARSHALL ISLANDS","mh"),
-("MARTINIQUE","mq"),
-("MAURITANIA","mr"),
-("MAURITIUS","mu"),
-("MAYOTTE","yt"),
-("MEXICO","mx"),
-("MICRONESIA","fm"),
-("MOLDAVA","md"),
-("MONACO","mc"),
-("MONGOLIA","mn"),
-("MONTENEGRO","me"),
-("MONTSERRAT","ms"),
-("MOROCCO","ma"),
-("MOZAMBIQUE","mz"),
-("MYANMAR","mm"),
-("NAMIBIA","na"),
-("NAURU","nr"),
-("NEPAL","np"),
-("NETHERLANDS ANTILLES","an"),
-("NETHERLANDS","nl"),
-("NEW CALEDONIA","nc"),
-("NEW ZEALAND","nz"),
-("NICARAGUA","ni"),
-("NIGER","ne"),
-("NIGERIA","ng"),
-("NIUE","nu"),
-("NORFOLK ISLAND","nf"),
-("NORTHERN MARIANA ISLANDS","mp"),
-("NORWAY","no"),
-("OMAN","om"),
-("PAKISTAN","pk"),
-("PALAU","pw"),
-("PALESTINE","ps"),
-("PANAMA","pa"),
-("PAPUA NEW GUINEA","pg"),
-("PARAGUAY","py"),
-("PERU","pe"),
-("PHILIPPINES","ph"),
-("PITCAIRN","pn"),
-("POLAND","pl"),
-("PORTUGAL","pt"),
-("PUERTO RICO","pr"),
-("QATAR","qa"),
-("REUNION","re"),
-("ROMANIA","ro"),
-("RUSSIAN FEDERATION","ru"),
-("RWANDA","rw"),
-("SAMOA","ws"),
-("SAN MARINO","sm"),
-("SAO TOME - PRINCIPE","st"),
-("SAUDI ARABIA","sa"),
-("SCOTLAND","uk"),
-("SENEGAL","sn"),
-("SERBIA","rs"),
-("SEYCHELLES","sc"),
-("SIERRA LEONE","sl"),
-("SINGAPORE","sg"),
-("SLOVAKIA","sk"),
-("SLOVENIA","si"),
-("SOLOMON ISLANDS","sb"),
-("SOMALIA","so"),
-("SOMOA, GILBERT - ELLICE ISLANDS","as"),
-("SOUTH AFRICA","za"),
-("SOUTH SANDWICH ISLANDS","gs"),
-("SOVIET UNION","su"),
-("SPAIN","es"),
-("SRI LANKA","lk"),
-("ST. HELENA","sh"),
-("ST. KITTS & NEVIS","kn"),
-("ST. LUCIA","lc"),
-("ST. PIERRE & MIQUELON","pm"),
-("ST. VINCENT & THE GRENADINES","vc"),
-("SUDAN","sd"),
-("SURINAME","sr"),
-("SVALBARD & JAN MAYEN","sj"),
-("SWAZILAND","sz"),
-("SWEDEN","se"),
-("SWITZERLAND","ch"),
-("SYRIAN ARAB REPUBLIC","sy"),
-("TAIWAN","tw"),
-("TAJIKISTAN","tj"),
-("TANZANIA - UNITED REPUBLIC OF","tz"),
-("THAILAND","th"),
-("TOGO","tg"),
-("TOKELAU","tk"),
-("TONGA","to"),
-("TRINIDAD & TOBAGO","tt"),
-("TUNISIA","tn"),
-("TURKEY","tr"),
-("TURKMENISTAN","tm"),
-("TURKS & CALCOS ISLANDS","tc"),
-("TUVALU","tv"),
-("UGANDA","ug"),
-("UKRAINE","ua"),
-("UNITED ARAB EMIRATES","ae"),
-("UNITED KINGDOM - OLD","gb"),
-("UNITED KINGDOM","uk"),
-("UNITED STATES","us"),
-("UNITED STATES MINOR OUTL.IS.","um"),
-("URUGUAY","uy"),
-("UZBEKISTAN","uz"),
-("VANUATU","vu"),
-("VATICAN CITY STATE","va"),
-("VENEZUELA","ve"),
-("VIET NAM","vn"),
-("VIRGIN ISLANDS","vi"),
-("WALLIS & FUTUNA ISLANDS","wf"),
-("WESTERN SAHARA","eh"),
-("YEMEN","ye"),
-("ZAMBIA","zm"),
-("ZIMBABWE","zw")]
-
-# https://anonymous-proxy-servers.net/wiki/index.php/Censorship-free_DNS_servers
-# http://www.coyotus.com/viewtopic.php?id=658
-# http://www.backtrack-linux.org/forums/showthread.php?t=1496
-DNSData = [("Chaos Computer Club Berlin","213.73.91.35"),
-("Comodo Secure DNS #1","156.154.70.22"),
-("Comodo Secure DNS #2","156.154.71.22"),
-("Censurfridns (Denmark) #1","89.233.43.71"),
-("Censurfridns (Denmark) #2","89.104.194.142"),
-("DNS Advantage #1","156.154.70.1"),
-("DNS Advantage #2","156.154.71.1"),
-("Dotplex #1","91.102.11.144"),
-("Dotplex #2","212.222.128.86"),
-("FoeBuD e.V.","85.214.20.141"),
-("Schweden DNS Kalmar NDC Registry","213.132.114.4"),
-("Island DNS Island Telecom","213.167.155.16"),
-("Antartica DNS (Cyberbunker NL)","84.22.106.30"),
-("US DNS Westelcom Internet, Inc.","64.19.76.8")
-]
-
-
-
 countryBlocked = []
-countryForced = []
-
-countrystateData = ['Normal',
-				'Forced',
-				'Blocked']
-			
+countryForced = []			
 			
 ext_ip = ""
 ext_ip_loc = ""
@@ -611,6 +312,15 @@ curr_cons = 0
 batt_perc = 0
 serial_reading = False 
 
+WifiAPkeyLenghtData = {}
+WifiAPkeyLenghtData['WifiAPkeyLenghts'] = {'40':5,
+'64':8,
+'104':13,
+'128':16,
+'152':16,
+'232':29,
+'256':32}
+
 # load pictures
 # MENU PICTURES
 img_left = pygame.image.load(data.filepath("icons/left_s.png"))			# 48x48
@@ -619,6 +329,7 @@ img_prev = pygame.image.load(data.filepath("icons/prev.png"))			# 80x52
 img_next = pygame.image.load(data.filepath("icons/next.png"))			# 80x52
 img_ok = pygame.image.load(data.filepath("icons/ok.png"))				# 140x60
 img_cancel = pygame.image.load(data.filepath("icons/cancel.png"))		# 140x60
+img_newkey = pygame.image.load(data.filepath("icons/newkey.png"))		# 140x60
 
 # this ugly variable will store arrows positions in pratical form for later use
 m1_xy =  [[0, LCD_HEIGHT/2-img_left.get_height()/2], 
@@ -647,6 +358,7 @@ next_pos = pygame.Rect(prevnext_xy[1][0], prevnext_xy[1][1], img_next.get_width(
 
 img_ok_pos = pygame.Rect(LCD_WIDTH/2-img_ok.get_width()/2, LCD_HEIGHT-img_ok.get_height(), img_ok.get_width(), img_ok.get_height())
 img_cancel_pos = pygame.Rect(LCD_WIDTH-img_cancel.get_width(), LCD_HEIGHT-img_cancel.get_height(), img_cancel.get_width(), img_cancel.get_height())
+img_newkey_pos = pygame.Rect(LCD_WIDTH/2-img_newkey.get_width()/2, LCD_HEIGHT-img_newkey.get_height()*2, img_newkey.get_width(), img_newkey.get_height())
 
 img_ok2_pos = pygame.Rect(0, LCD_HEIGHT-img_ok.get_height(), img_ok.get_width(), img_ok.get_height())
 
@@ -684,6 +396,33 @@ menu_button = pygame.image.load(data.filepath("icons/"+str(MISC_ICONSIZE)+"/"+BO
 menu_button_x = LCD_WIDTH/2-MISC_ICONSIZE
 menu_button_y = LCD_HEIGHT-MISC_ICONSIZE-MARGIN_Y
 
+class ParseINI(dict):
+	def __init__(self, f):
+		self.f = f
+		self.__read()
+ 
+	def __read(self):
+		with open(self.f, 'r') as f:
+			dict = self
+			for line in f:
+				if not line.startswith("#") and not line.startswith(';') and line.strip() != "":
+					line = line.replace('=', ':')
+					line = line.replace(';', '#')
+					index = line.find('#')
+					line = line[:index]
+					line = line.strip()
+					if not self:
+						dict['global'] = {}
+						dict = dict['global']
+					parts = line.split(":", 1)
+					dict[parts[0].strip()] = parts[1].strip()
+ 
+	def items(self):
+		try:
+			return self
+		except KeyError:
+			return []
+			
 def saveSettings():
 	print "- Saving settings"
 	try:
@@ -694,7 +433,8 @@ def saveSettings():
 		d = { 
 			'displayDelay' : displayDelay,
 			'countryBlocked' : countryBlocked,
-			'countryForced' : countryForced
+			'countryForced' : countryForced,
+			'WifiAPkeyLenght' : WifiAPkeyLenght
 			}
 		pickle.dump(d, outfile)
 		outfile.close()
@@ -706,6 +446,7 @@ def loadSettings():
 	global displayDelay
 	global countryBlocked
 	global countryForced
+	global WifiAPkeyLenght
 	print "- Loading settings"
 	try:
 		infile = open('config.pkl', 'rb')
@@ -715,6 +456,7 @@ def loadSettings():
 		if 'displayDelay' in d: displayDelay = d['displayDelay']
 		if 'countryBlocked' in d: countryBlocked = d['countryBlocked']
 		if 'countryForced' in d: countryForced = d['countryForced']
+		if 'WifiAPkeyLenght' in d: WifiAPkeyLenght = d['WifiAPkeyLenght']
 	except:
 		print("-- error")
 		pass
@@ -734,6 +476,64 @@ def getIP(url):
 	elif GET_IP_METHOD == 2:
 		result = get('http://api.ipify.org').text
 		return result
+		
+def generateKey(lenght):
+	count = WifiAPkeyLenghtData['WifiAPkeyLenghts'][lenght]
+	f = os.popen("dd if=/dev/random bs=1 count="+str(count)+" 2>/dev/null|xxd -ps")
+	for i in f.readlines():
+		i = i.rstrip('\n')
+		key = i
+	return key
+	
+def APgetnewkey(file, key):
+	data = "ctrl_interface=/var/run/hostapd\n"
+	data += "driver=rtl871xdrv\n"
+	data += "ieee80211n=1\n"
+	data += "ctrl_interface_group=0\n"
+	data += "beacon_int=100\n"
+	data += "interface=wlan0\n"
+	data += "ssid=UnJailPiWifi\n"
+	data += "hw_mode=g\n"
+	data += "channel=6\n"
+	data += "auth_algs=1\n"
+	data += "wmm_enabled=1\n"
+	data += "eap_reauth_period=360000000\n"
+	data += "macaddr_acl=0\n"
+	data += "ignore_broadcast_ssid=0\n"
+	data += "wpa=2\n"
+	data += "wpa_passphrase="+key+"\n"
+	data += "wpa_key_mgmt=WPA-PSK\n"
+	data += "wpa_pairwise=TKIP\n"
+	data += "rsn_pairwise=CCMP\n"
+
+	f = open(file, 'wb')
+	f.write(data+"\n")
+	f.close()
+	
+def write_hostapdConfig(file):
+	data = "ctrl_interface="+hostapdConfig['global']['ctrl_interface']+"\n"
+	data += "driver="+hostapdConfig['global']['driver']+"\n"
+	data += "ieee80211n="+hostapdConfig['global']['ieee80211n']+"\n"
+	data += "ctrl_interface_group="+hostapdConfig['global']['ctrl_interface_group']+"\n"
+	data += "beacon_int="+hostapdConfig['global']['beacon_int']+"\n"
+	data += "interface=wlan"+hostapdConfig['global']['interface']+"\n"
+	data += "ssid="+hostapdConfig['global']['ssid']+"\n"
+	data += "hw_mode="+hostapdConfig['global']['hw_mode']+"\n"
+	data += "channel="+hostapdConfig['global']['channel']+"\n"
+	data += "auth_algs="+hostapdConfig['global']['auth_algs']+"\n"
+	data += "wmm_enabled="+hostapdConfig['global']['wmm_enabled']+"\n"
+	data += "eap_reauth_period="+hostapdConfig['global']['eap_reauth_period']+"\n"
+	data += "macaddr_acl="+hostapdConfig['global']['macaddr_acl']+"\n"
+	data += "ignore_broadcast_ssid="+hostapdConfig['global']['ignore_broadcast_ssid']+"\n"
+	data += "wpa="+hostapdConfig['global']['wpa']+"\n"
+	data += "wpa_passphrase="+hostapdConfig['global']['wpa_passphrase']+"\n"
+	data += "wpa_key_mgmt="+hostapdConfig['global']['wpa_key_mgmt']+"\n"
+	data += "wpa_pairwise="+hostapdConfig['global']['wpa_pairwise']+"\n"
+	data += "rsn_pairwise="+hostapdConfig['global']['rsn_pairwise']+"\n"
+
+	f = open(file, 'wb')
+	f.write(data+"\n")
+	f.close()
 	
 def get_ESSID(interface):
 	global ESSID
@@ -1096,10 +896,13 @@ def update(background, screen):
 		else:
 			b_vpn = screen.blit(vpn_off_button, (vpn_x, vpn_y))
 		
-		tmp_float = float(tmp)
-		if tmp_float >= UPIS_TEMP_ALERT:
-			x = LCD_WIDTH-overtemp_icon.get_width()-5
-			screen.blit(overtemp_icon, (x,y))
+		if upis == True:
+			tmp_float = float(tmp)
+			if tmp_float >= UPIS_TEMP_ALERT:
+				x = LCD_WIDTH-overtemp_icon.get_width()-5
+				screen.blit(overtemp_icon, (x,y))
+			else:
+				x = LCD_WIDTH-5
 		else:
 			x = LCD_WIDTH-5
 			
@@ -1653,7 +1456,7 @@ def options_menu(screen):
 		if choice == 1 : settings_menu(screen)
 		if choice == 2 : misc_menu(screen)
 		if choice == 3 : system_menu(screen)
-		if choice == 4 : network_infos(screen)
+		if choice == len(mainmenuData)-1 : network_infos(screen)
 		pygame.display.flip()
 
 def network_menu(screen):
@@ -1666,7 +1469,8 @@ def network_menu(screen):
 		if choice == 1 : reset_wlan_client(screen)
 		if choice == 2 : reset_eth(screen)
 		if choice == 3 : tor_country_settings(screen)
-		if choice == 4 : options_menu(screen)
+		if choice == 4 : changeKey_menu(screen)
+		if choice == len(networkmenuData)-1 : options_menu(screen)
 		pygame.display.flip()
 
 def settings_menu(screen):
@@ -1674,7 +1478,7 @@ def settings_menu(screen):
 	while True:
 		choice = menu0(screen, settingsmenuData, "Options")	
 		if choice == 0 : changeValue_menu(screen, displayDelayData, displayDelay, "Display Timeout", " seconds")
-		if choice == 1 : options_menu(screen)
+		if choice == len(settingsmenuData)-1 : options_menu(screen)
 		pygame.display.flip()
 		
 def misc_menu(screen):
@@ -1682,7 +1486,7 @@ def misc_menu(screen):
 	while True:
 		choice = menu0(screen, miscmenuData, "Options")	
 		if choice == 0 : power_infos(screen)
-		if choice == 1 : options_menu(screen)
+		if choice == len(miscmenuData)-1 : options_menu(screen)
 		pygame.display.flip()
 		
 def system_menu(screen):
@@ -1701,7 +1505,7 @@ def system_menu(screen):
 		if choice == 3 : 
 			saveSettings()
 			Shutdown(screen)
-		if choice == 4 : options_menu(screen)
+		if choice == len(systemmenuData)-1 : options_menu(screen)
 		pygame.display.flip()
 
 def menu0(screen, options, title, titlesize=22, choicesize = 18, titlecolor=(255,255,255), choicecolor=(255,0,0)):	
@@ -1817,6 +1621,55 @@ def changeValue_menu(screen, option, n, title, unit, titlesize=22, choicesize = 
 			label = font.render(text, 1, (choicecolor))
 					 
 		screen.blit(label, (LCD_WIDTH/2-label.get_width()/2,LCD_HEIGHT/2-font.get_height()/2))
+				
+		pygame.display.flip()
+		
+		
+def changeKey_menu(screen, titlesize=22, choicesize = 16, titlecolor=(255,255,255), choicecolor=(255,255,255)):	
+	global hostapdConfig
+	hostapdConfig = ParseINI('/etc/hostapd/hostapd.conf')
+	key = hostapdConfig['global']['wpa_passphrase']
+	old_key = key
+	# newkey = key
+	while True:
+		screen.fill(black)		
+
+		font = pygame.font.Font(pygame.font.get_default_font(),titlesize)
+		label = font.render("Security key", 1, (white))
+			
+		screen.blit(label, (LCD_WIDTH/2-label.get_width()/2,0+10))
+	
+		screen.blit(img_newkey, (LCD_WIDTH/2-img_newkey.get_width()/2, LCD_HEIGHT-img_newkey.get_height()*2))
+		screen.blit(img_ok, (0, LCD_HEIGHT-img_ok.get_height()))
+		screen.blit(img_cancel, (LCD_WIDTH-img_cancel.get_width(), LCD_HEIGHT-img_cancel.get_height()))
+	
+		# Touchscreen
+		for e in pygame.event.get():
+			if e.type == pygame.MOUSEBUTTONDOWN:
+				pos = pygame.mouse.get_pos()
+				
+				if img_newkey_pos.collidepoint(pos):
+					key = generateKey(WifiAPkeyLenght)
+				if img_ok2_pos.collidepoint(pos):
+					hostapdConfig['global']['wpa_passphrase'] = key
+					write_hostapdConfig('/etc/hostapd/hostapd.conf')
+					saveSettings()
+					reset_wlan_ap(screen)
+					network_infos(screen)
+					
+				if img_cancel_pos.collidepoint(pos):
+					hostapdConfig['global']['wpa_passphrase'] = old_key
+					network_infos(screen)
+		
+		font = pygame.font.Font(pygame.font.get_default_font(),choicesize)
+		text = str(key)
+		label = font.render(text, 1, (choicecolor))		 
+		screen.blit(label, (LCD_WIDTH/2-label.get_width()/2,50))
+		
+		# font = pygame.font.Font(pygame.font.get_default_font(),choicesize)
+		# text = str(newkey)
+		# label = font.render(text, 1, (choicecolor))					 
+		# screen.blit(label, (LCD_WIDTH/2-label.get_width()/2,70))
 				
 		pygame.display.flip()
 	
@@ -2001,6 +1854,14 @@ def tor_country_settings(screen, title="TOR country settings", titlesize=22, cho
 		pygame.display.flip()		
 
 loadSettings()				
+
+hostapdConfig = ParseINI('/etc/hostapd/hostapd.conf')
+if WifiAPkeyChangeonStartup == True:
+	key = generateKey(WifiAPkeyLenght)
+	hostapdConfig['global']['wpa_passphrase'] = key
+	write_hostapdConfig('/etc/hostapd/hostapd.conf')
+	reset_wlan_ap(screen)
+	
 ### MAIN LOOP - START
 network_infos(screen)
 

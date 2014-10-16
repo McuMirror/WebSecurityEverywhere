@@ -1,6 +1,71 @@
-10-16-2014
+##########################
+#Autonomous internet security box
+#
+#    Copyright (C) 2014  Arcadia Labs / Stephane Guerreau
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+##########################
 
-Sources have been put back online with a new update
+
+##########################
+# 5_11
+# added random access point security key generation, with its menu page (only "generate a new key" feature for the moment)
+# hostapd config file read / parse / save functions
+# added upis True/False config variable to disable upis related features
+######
+# 5_9
+# added ext ip check function with TOR check page (GET_IP_METHOD = 1 : apify, 2 : TOR check)
+# added upis over temperature alert icon
+# added display refresh delay setting
+# TOR white/black list are now saved on exit, loaded on start
+######
+# 5_8
+# added country based TOR relays white/black list functions
+######
+# 5_6
+# moved TOR scripts to main data directory
+# added configfiles directory with dnsmasq.conf, torrc
+# removed old data subdirectory
+######
+# 5_5
+# improved UPiS management
+# added licence (GPL v3) and CLI notice
+# enabled screen timeout
+# improved rpi/bpi common code
+# cleaned up main data directory
+# moved GeoIP database to main data directory
+######
+# 5_4
+# solved some UPiS management bugs (old code is still there for eventual future use)
+# solved screen timeout bug
+# changed the public ip check function to be more reliable (apify)
+######
+# 5_2
+# changed menus
+# added screen timeout function (disabled for now)
+# added debug function
+# improved rpi/bpi common code
+# added basic UPiS / power management functions
+######
+# 5_1
+# added rpi/bpi temperature common function
+##########################
+
+10-16-2014
+Sources have been put back online with a new update (5_9)
+New update (5_11)
 
 10-15-2014
 
