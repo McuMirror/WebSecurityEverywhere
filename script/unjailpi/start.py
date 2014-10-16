@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 ##########################
-#Autonomous internet security box
+#	 Autonomous internet security box
 #
 #    Copyright (C) 2014  Arcadia Labs / Stephane Guerreau
 #
@@ -516,7 +516,7 @@ def write_hostapdConfig(file):
 	data += "ieee80211n="+hostapdConfig['global']['ieee80211n']+"\n"
 	data += "ctrl_interface_group="+hostapdConfig['global']['ctrl_interface_group']+"\n"
 	data += "beacon_int="+hostapdConfig['global']['beacon_int']+"\n"
-	data += "interface=wlan"+hostapdConfig['global']['interface']+"\n"
+	data += "interface="+hostapdConfig['global']['interface']+"\n"
 	data += "ssid="+hostapdConfig['global']['ssid']+"\n"
 	data += "hw_mode="+hostapdConfig['global']['hw_mode']+"\n"
 	data += "channel="+hostapdConfig['global']['channel']+"\n"

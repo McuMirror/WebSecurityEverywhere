@@ -39,7 +39,7 @@ data_dir = os.path.normpath(os.path.join(data_py, '..', 'data'))
 ## // --> config.py
 popup_border = 5
 
-debug = True
+debug = False
 
 board_type = "rpi"		# 1= rpi, 2= bpi
 upis = False
