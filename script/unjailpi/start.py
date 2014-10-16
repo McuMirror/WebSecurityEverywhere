@@ -485,31 +485,6 @@ def generateKey(lenght):
 		key = i
 	return key
 	
-def APgetnewkey(file, key):
-	data = "ctrl_interface=/var/run/hostapd\n"
-	data += "driver=rtl871xdrv\n"
-	data += "ieee80211n=1\n"
-	data += "ctrl_interface_group=0\n"
-	data += "beacon_int=100\n"
-	data += "interface=wlan0\n"
-	data += "ssid=UnJailPiWifi\n"
-	data += "hw_mode=g\n"
-	data += "channel=6\n"
-	data += "auth_algs=1\n"
-	data += "wmm_enabled=1\n"
-	data += "eap_reauth_period=360000000\n"
-	data += "macaddr_acl=0\n"
-	data += "ignore_broadcast_ssid=0\n"
-	data += "wpa=2\n"
-	data += "wpa_passphrase="+key+"\n"
-	data += "wpa_key_mgmt=WPA-PSK\n"
-	data += "wpa_pairwise=TKIP\n"
-	data += "rsn_pairwise=CCMP\n"
-
-	f = open(file, 'wb')
-	f.write(data+"\n")
-	f.close()
-	
 def write_hostapdConfig(file):
 	data = "ctrl_interface="+hostapdConfig['global']['ctrl_interface']+"\n"
 	data += "driver="+hostapdConfig['global']['driver']+"\n"
