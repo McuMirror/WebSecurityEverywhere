@@ -1,0 +1,11 @@
+(dp1
+S'countryForced'
+p2
+(lp3
+sS'countryBlocked'
+p4
+(lp5
+sS'displayDelay'
+p6
+I0
+s.
