@@ -63,6 +63,10 @@
 # added rpi/bpi temperature common function
 ##########################
 
+IMPORTANT NOTE :
+iptables rules are minimal in this public release, so don't use the script as is. I will update it with better rules when they are verified.
+However they are very easy to customize using the included bash scripts and the iptables_restore() / iptables_openvpn() functions.
+
 10-16-2014
 Sources have been put back online with a new update (5_9)
 New update (5_11)
